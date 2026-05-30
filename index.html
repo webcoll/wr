@@ -210,6 +210,21 @@
 
     </div>
 
+    <!-- Fallback script in case Firebase modules block or fail to load -->
+    <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loading = document.getElementById('loading-screen');
+                const login = document.getElementById('login-screen');
+                if (loading && !loading.classList.contains('hidden')) {
+                    loading.classList.add('hidden');
+                    if (login) login.classList.remove('hidden');
+                    console.warn("Application load timeout. Checked for blocked connections or slow network.");
+                }
+            }, 8000);
+        });
+    </script>
+
     <!-- Application Script -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -217,9 +232,15 @@
         import { getFirestore, collection, doc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Configuration & Initialization ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "mock", authDomain: "mock", projectId: "mock", appId: "mock"
-        };
+        let firebaseConfig = { apiKey: "mock", authDomain: "mock", projectId: "mock", appId: "mock" };
+        try {
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                firebaseConfig = JSON.parse(__firebase_config);
+            }
+        } catch (e) {
+            console.error("Config parse error:", e);
+        }
+        
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -301,13 +322,27 @@
             }
         }
 
-        document.getElementById('btn-guest-login').addEventListener('click', async () => {
+        document.getElementById('btn-guest-login').addEventListener('click', async (e) => {
             els.loading.classList.remove('hidden');
             try {
                 await signInAnonymously(auth);
                 isGuest = true;
             } catch (error) {
                 console.error("Guest login failed:", error);
+                els.loading.classList.add('hidden');
+                
+                // Show inline error on the button
+                const btn = e.currentTarget;
+                const origText = btn.innerHTML;
+                btn.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Login Failed`;
+                btn.classList.replace('bg-blue-600', 'bg-red-600');
+                btn.classList.replace('hover:bg-blue-700', 'hover:bg-red-700');
+                
+                setTimeout(() => {
+                    btn.innerHTML = origText;
+                    btn.classList.replace('bg-red-600', 'bg-blue-600');
+                    btn.classList.replace('hover:bg-red-700', 'hover:bg-blue-700');
+                }, 4000);
             }
         });
 
@@ -317,25 +352,31 @@
         });
 
         onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('user-display-id').textContent = user.uid.substring(0, 8) + '...';
-                document.getElementById('user-display-name').textContent = isGuest ? 'Guest User' : 'Authenticated User';
-                els.login.classList.add('hidden');
-                els.app.classList.remove('hidden');
-                setupFirestoreListeners();
-                renderNavigation();
-                renderActiveTab();
-                populateDropdowns();
-            } else {
-                currentUser = null;
-                els.app.classList.add('hidden');
-                els.login.classList.remove('hidden');
-                // Cleanup listeners
-                unsubscribes.forEach(unsub => unsub());
-                unsubscribes = [];
+            try {
+                if (user) {
+                    currentUser = user;
+                    document.getElementById('user-display-id').textContent = user.uid.substring(0, 8) + '...';
+                    document.getElementById('user-display-name').textContent = isGuest ? 'Guest User' : 'Authenticated User';
+                    els.login.classList.add('hidden');
+                    els.app.classList.remove('hidden');
+                    setupFirestoreListeners();
+                    renderNavigation();
+                    renderActiveTab();
+                    populateDropdowns();
+                } else {
+                    currentUser = null;
+                    els.app.classList.add('hidden');
+                    els.login.classList.remove('hidden');
+                    // Cleanup listeners
+                    unsubscribes.forEach(unsub => unsub());
+                    unsubscribes = [];
+                }
+            } catch (error) {
+                console.error("Error during auth state change:", error);
+            } finally {
+                // Guaranteed to hide spinner even if UI rendering fails above
+                els.loading.classList.add('hidden');
             }
-            els.loading.classList.add('hidden');
         });
 
         // --- Firestore Data Fetching (Rules 1 & 2) ---
