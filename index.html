@@ -21,21 +21,6 @@
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 antialiased overflow-hidden">
 
-    <div id="login-screen" class="hidden fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-4 z-50">
-        <div class="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center border border-gray-100">
-            <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <i class="fas fa-briefcase text-3xl"></i>
-            </div>
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">WorkFlow</h1>
-            <p class="text-gray-500 mb-8">Manage your tasks, track hours, and generate smart reports seamlessly.</p>
-            
-            <button id="btn-guest-login" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2">
-                <i class="fas fa-user"></i> Continue as Guest
-            </button>
-            <p class="mt-4 text-xs text-gray-400">Your data will be saved locally for this session.</p>
-        </div>
-    </div>
-
     <div id="app-wrapper" class="hidden min-h-screen flex bg-gray-100">
         
         <div id="mobile-overlay" class="hidden fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"></div>
@@ -67,7 +52,7 @@
                             <p class="text-xs text-gray-500 truncate" id="user-display-id">...</p>
                         </div>
                     </div>
-                    <button id="btn-logout" class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Logout">
+                    <button id="btn-logout" class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Reset Session">
                         <i class="fas fa-sign-out-alt"></i>
                     </button>
                 </div>
@@ -216,7 +201,6 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         let currentUser = null;
-        let isGuest = false;
         let activeTab = 'manager';
         
         let state = {
@@ -230,7 +214,6 @@
         let unsubscribes = [];
 
         const els = {
-            login: document.getElementById('login-screen'),
             app: document.getElementById('app-wrapper'),
             content: document.getElementById('content-area'),
             navMenu: document.getElementById('nav-menu'),
@@ -274,39 +257,17 @@
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
-                    els.login.classList.remove('hidden');
+                    // Seamless anonymous login without showing a login screen
+                    await signInAnonymously(auth);
                 }
             } catch (error) {
                 console.error("Auth init error:", error);
-                els.login.classList.remove('hidden');
             }
         }
 
-        document.getElementById('btn-guest-login').addEventListener('click', async (e) => {
-            const btn = e.currentTarget;
-            const origText = btn.innerHTML;
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
-            
-            try {
-                await signInAnonymously(auth);
-                isGuest = true;
-            } catch (error) {
-                console.error("Guest login failed:", error);
-                btn.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Login Failed`;
-                btn.classList.replace('bg-blue-600', 'bg-red-600');
-                btn.classList.replace('hover:bg-blue-700', 'hover:bg-red-700');
-                
-                setTimeout(() => {
-                    btn.innerHTML = origText;
-                    btn.classList.replace('bg-red-600', 'bg-blue-600');
-                    btn.classList.replace('hover:bg-red-700', 'hover:bg-blue-700');
-                }, 4000);
-            }
-        });
-
         document.getElementById('btn-logout').addEventListener('click', async () => {
+            // Logging out will automatically sign them back in with a fresh anonymous session via onAuthStateChanged
             await signOut(auth);
-            isGuest = false;
         });
 
         onAuthStateChanged(auth, (user) => {
@@ -314,8 +275,7 @@
                 if (user) {
                     currentUser = user;
                     document.getElementById('user-display-id').textContent = user.uid.substring(0, 8) + '...';
-                    document.getElementById('user-display-name').textContent = isGuest ? 'Guest User' : 'Authenticated User';
-                    els.login.classList.add('hidden');
+                    document.getElementById('user-display-name').textContent = user.isAnonymous ? 'Guest User' : 'Authenticated User';
                     els.app.classList.remove('hidden');
                     setupFirestoreListeners();
                     renderNavigation();
@@ -324,9 +284,10 @@
                 } else {
                     currentUser = null;
                     els.app.classList.add('hidden');
-                    els.login.classList.remove('hidden');
                     unsubscribes.forEach(unsub => unsub());
                     unsubscribes = [];
+                    // Ensure they are re-authenticated with a fresh session immediately
+                    initAuth();
                 }
             } catch (error) {
                 console.error("Error during auth state change:", error);
