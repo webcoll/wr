@@ -20,13 +20,8 @@
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 antialiased overflow-hidden">
 
-    <!-- Loading Screen -->
-    <div id="loading-screen" class="fixed inset-0 bg-gray-50 flex items-center justify-center z-[100]">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-    </div>
-
     <!-- Login Screen -->
-    <div id="login-screen" class="hidden fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-4 z-50">
+    <div id="login-screen" class="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-4 z-50">
         <div class="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center border border-gray-100">
             <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <i class="fas fa-briefcase text-3xl"></i>
@@ -210,21 +205,6 @@
 
     </div>
 
-    <!-- Fallback script in case Firebase modules block or fail to load -->
-    <script>
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                const loading = document.getElementById('loading-screen');
-                const login = document.getElementById('login-screen');
-                if (loading && !loading.classList.contains('hidden')) {
-                    loading.classList.add('hidden');
-                    if (login) login.classList.remove('hidden');
-                    console.warn("Application load timeout. Checked for blocked connections or slow network.");
-                }
-            }, 8000);
-        });
-    </script>
-
     <!-- Application Script -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -263,7 +243,6 @@
 
         // --- DOM Elements ---
         const els = {
-            loading: document.getElementById('loading-screen'),
             login: document.getElementById('login-screen'),
             app: document.getElementById('app-wrapper'),
             content: document.getElementById('content-area'),
@@ -312,24 +291,20 @@
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
                     // Show login screen if no token
-                    els.loading.classList.add('hidden');
                     els.login.classList.remove('hidden');
                 }
             } catch (error) {
                 console.error("Auth init error:", error);
-                els.loading.classList.add('hidden');
                 els.login.classList.remove('hidden');
             }
         }
 
         document.getElementById('btn-guest-login').addEventListener('click', async (e) => {
-            els.loading.classList.remove('hidden');
             try {
                 await signInAnonymously(auth);
                 isGuest = true;
             } catch (error) {
                 console.error("Guest login failed:", error);
-                els.loading.classList.add('hidden');
                 
                 // Show inline error on the button
                 const btn = e.currentTarget;
@@ -373,9 +348,6 @@
                 }
             } catch (error) {
                 console.error("Error during auth state change:", error);
-            } finally {
-                // Guaranteed to hide spinner even if UI rendering fails above
-                els.loading.classList.add('hidden');
             }
         });
 
