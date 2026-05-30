@@ -3,763 +3,853 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WorkFlow - Work Management Portal</title>
-    
+    <title>Work Management Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        [x-cloak] { display: none !important; }
+        /* Custom Scrollbar for better UI */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
-<body class="bg-gray-50 font-sans text-gray-800 antialiased overflow-hidden">
+<body class="bg-gray-50 text-gray-800 font-sans h-screen flex overflow-hidden selection:bg-indigo-100 selection:text-indigo-900">
 
-    <div id="app-wrapper" class="hidden min-h-screen flex bg-gray-100">
-        
-        <div id="mobile-overlay" class="hidden fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"></div>
-
-        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col">
-            <div class="p-6 border-b border-gray-100 flex items-center justify-between">
-                <div class="flex items-center gap-3 text-blue-600 font-bold text-xl">
-                    <i class="fas fa-briefcase"></i> WorkFlow
-                </div>
-                <button id="btn-close-sidebar" class="lg:hidden p-1 text-gray-500 hover:bg-gray-100 rounded-md">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-
-            <nav class="flex-1 overflow-y-auto py-4 hide-scroll">
-                <ul class="space-y-1 px-3" id="nav-menu">
-                    <!-- Nav items injected via JS -->
-                </ul>
-            </nav>
-
-            <div class="p-4 border-t border-gray-100">
-                <div class="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl">
-                    <div class="flex items-center gap-2 overflow-hidden">
-                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 shrink-0">
-                            <i class="fas fa-user text-sm"></i>
-                        </div>
-                        <div class="truncate text-sm">
-                            <p class="font-medium text-gray-800 truncate" id="user-display-name">User</p>
-                            <p class="text-xs text-gray-500 truncate" id="user-display-id">...</p>
-                        </div>
-                    </div>
-                    <button id="btn-logout" class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Reset Session">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </button>
-                </div>
-            </div>
-        </aside>
-
-        <main class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-            <header class="lg:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between shrink-0">
-                <div class="flex items-center gap-3 text-blue-600 font-bold text-lg">
-                    <i class="fas fa-briefcase"></i> WorkFlow
-                </div>
-                <button id="btn-open-sidebar" class="p-2 -mr-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-                    <i class="fas fa-bars"></i>
-                </button>
-            </header>
-
-            <div id="content-area" class="flex-1 overflow-y-auto p-4 sm:p-6">
-                <!-- Content injected via JS -->
-            </div>
-        </main>
+    <!-- Mobile Header -->
+    <div class="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center fixed w-full z-20">
+        <div class="font-bold text-xl"><i class="fa-solid fa-layer-group text-indigo-400 mr-2"></i>WorkHub</div>
+        <button id="mobile-menu-btn" class="text-white focus:outline-none">
+            <i class="fa-solid fa-bars text-2xl"></i>
+        </button>
     </div>
 
-    <div id="modal-backdrop" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center p-4 z-[60]">
-        
-        <div id="modal-add-task" class="hidden bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="p-4 border-b flex justify-between items-center bg-gray-50">
-                <h2 class="text-xl font-semibold text-gray-800">Add New Task</h2>
-                <button class="modal-close-btn p-1 hover:bg-gray-200 rounded-full transition-colors">
-                    <i class="fas fa-times text-gray-500"></i>
-                </button>
-            </div>
-            
-            <div class="p-4 overflow-y-auto">
-                <form id="form-add-task" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Work Name *</label>
-                        <input required type="text" id="task-name" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="E.g., Complete UI Design">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                        <div id="category-select-wrapper" class="flex gap-2">
-                            <select id="task-category" class="w-full p-2 border rounded-md bg-white"></select>
-                            <button type="button" id="btn-show-add-category" class="px-3 border border-dashed border-gray-400 text-gray-600 rounded-md hover:bg-gray-50 flex items-center" title="Add Category">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div id="category-add-wrapper" class="hidden gap-2">
-                            <input type="text" id="new-category-name" class="w-full p-2 border rounded-md" placeholder="New Category Name">
-                            <button type="button" id="btn-add-category" class="bg-green-600 text-white px-3 rounded-md hover:bg-green-700">Add</button>
-                            <button type="button" id="btn-cancel-category" class="bg-gray-200 text-gray-700 px-3 rounded-md hover:bg-gray-300">Cancel</button>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Assigned Date</label>
-                            <input type="date" id="task-assigned-date" class="w-full p-2 border rounded-md">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                            <input type="date" id="task-due-date" class="w-full p-2 border rounded-md">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Schedule Work</label>
-                            <input type="date" id="task-schedule-date" class="w-full p-2 border rounded-md">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
-                            <select id="task-assigned-to" class="w-full p-2 border rounded-md bg-white"></select>
-                        </div>
-                    </div>
-
-                    <div class="pt-4 border-t mt-6 flex justify-end gap-3">
-                        <button type="button" class="modal-close-btn px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors">Cancel</button>
-                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Save Task</button>
-                    </div>
-                </form>
-            </div>
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar" class="bg-slate-900 text-slate-300 w-64 flex-shrink-0 h-full flex flex-col transition-transform transform -translate-x-full md:translate-x-0 absolute md:relative z-10">
+        <div class="p-6 hidden md:flex items-center">
+            <i class="fa-solid fa-layer-group text-indigo-400 text-2xl mr-3"></i>
+            <span class="text-white text-2xl font-bold tracking-wide">WorkHub</span>
         </div>
-
-        <div id="modal-log-time" class="hidden bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="p-4 border-b flex justify-between items-center bg-gray-50">
-                <h2 class="text-xl font-semibold text-gray-800" id="log-modal-title">Log Time</h2>
-                <button class="modal-close-btn p-1 hover:bg-gray-200 rounded-full transition-colors">
-                    <i class="fas fa-times text-gray-500"></i>
-                </button>
-            </div>
-            
-            <div class="p-4 overflow-y-auto">
-                <form id="form-log-time" class="space-y-4">
-                    <input type="hidden" id="log-id">
-                    <input type="hidden" id="log-date">
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Work Name</label>
-                        <input required type="text" id="log-work-name" class="w-full p-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="What did you work on?">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                        <select id="log-category" class="w-full p-2 border rounded-md bg-white"></select>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Hours</label>
-                            <input type="number" min="0" max="24" id="log-hours" class="w-full p-2 border rounded-md" value="1">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Minutes</label>
-                            <input type="number" min="0" max="59" id="log-minutes" class="w-full p-2 border rounded-md" value="0">
-                        </div>
-                    </div>
-
-                    <div class="pt-4 border-t mt-6 flex justify-end gap-3">
-                        <button type="button" class="modal-close-btn px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors">Cancel</button>
-                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">Save Log</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        let firebaseConfig = { apiKey: "mock", authDomain: "mock", projectId: "mock", appId: "mock" };
-        try {
-            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                firebaseConfig = JSON.parse(__firebase_config);
-            }
-        } catch (e) {
-            console.error("Config parse error:", e);
-        }
-        
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-        let currentUser = null;
-        let activeTab = 'manager';
-        
-        let state = {
-            tasks: [],
-            hourlyLogs: [],
-            categories: [{ id: '1', name: 'General' }, { id: '2', name: 'Meeting' }, { id: '3', name: 'Development' }],
-            teamMembers: [{ id: 'm1', name: 'Self' }, { id: 'm2', name: 'John Doe' }, { id: 'm3', name: 'Jane Smith' }],
-            selectedReportDate: getTodayString()
-        };
-
-        let unsubscribes = [];
-
-        const els = {
-            app: document.getElementById('app-wrapper'),
-            content: document.getElementById('content-area'),
-            navMenu: document.getElementById('nav-menu'),
-            sidebar: document.getElementById('sidebar'),
-            mobileOverlay: document.getElementById('mobile-overlay'),
-            modalBackdrop: document.getElementById('modal-backdrop'),
-            modalAddTask: document.getElementById('modal-add-task'),
-            modalLogTime: document.getElementById('modal-log-time')
-        };
-
-        const navItems = [
-            { id: 'today', label: "Today's Work", icon: 'fa-calendar-alt', color: 'text-blue-600', bg: 'bg-blue-100' },
-            { id: 'manager', label: "Work Manager", icon: 'fa-briefcase', color: 'text-blue-600', bg: 'bg-blue-100' },
-            { id: 'hourly', label: "Hourly Report", icon: 'fa-clock', color: 'text-indigo-600', bg: 'bg-indigo-100' },
-            { id: 'report', label: "Smart Report", icon: 'fa-file-alt', color: 'text-purple-600', bg: 'bg-purple-100' },
-            { id: 'assistant', label: "Assistant", icon: 'fa-robot', color: 'text-blue-500', bg: 'bg-blue-50' },
-            { id: 'team', label: "Work Done By", icon: 'fa-users', color: 'text-teal-500', bg: 'bg-teal-50' }
-        ];
-
-        function getTodayString() {
-            return new Date().toISOString().split('T')[0];
-        }
-
-        function isOverdue(dueDate, status) {
-            if (!dueDate || status === 'completed') return false;
-            return new Date(dueDate) < new Date(getTodayString());
-        }
-
-        function closeSidebar() {
-            els.sidebar.classList.add('-translate-x-full');
-            els.mobileOverlay.classList.add('hidden');
-        }
-
-        function openSidebar() {
-            els.sidebar.classList.remove('-translate-x-full');
-            els.mobileOverlay.classList.remove('hidden');
-        }
-
-        async function initAuth() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    // Seamless anonymous login without showing a login screen
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Auth init error:", error);
-            }
-        }
-
-        document.getElementById('btn-logout').addEventListener('click', async () => {
-            // Logging out will automatically sign them back in with a fresh anonymous session via onAuthStateChanged
-            await signOut(auth);
-        });
-
-        onAuthStateChanged(auth, (user) => {
-            try {
-                if (user) {
-                    currentUser = user;
-                    document.getElementById('user-display-id').textContent = user.uid.substring(0, 8) + '...';
-                    document.getElementById('user-display-name').textContent = user.isAnonymous ? 'Guest User' : 'Authenticated User';
-                    els.app.classList.remove('hidden');
-                    setupFirestoreListeners();
-                    renderNavigation();
-                    renderActiveTab();
-                    populateDropdowns();
-                } else {
-                    currentUser = null;
-                    els.app.classList.add('hidden');
-                    unsubscribes.forEach(unsub => unsub());
-                    unsubscribes = [];
-                    // Ensure they are re-authenticated with a fresh session immediately
-                    initAuth();
-                }
-            } catch (error) {
-                console.error("Error during auth state change:", error);
-            }
-        });
-
-        function setupFirestoreListeners() {
-            if (!currentUser) return;
-            
-            unsubscribes.forEach(unsub => unsub());
-            unsubscribes = [];
-
-            const basePath = `artifacts/${appId}/users/${currentUser.uid}`;
-            
-            const tasksRef = collection(db, `${basePath}/tasks`);
-            unsubscribes.push(onSnapshot(tasksRef, (snapshot) => {
-                state.tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderActiveTab();
-            }, console.error));
-
-            const logsRef = collection(db, `${basePath}/hourlyLogs`);
-            unsubscribes.push(onSnapshot(logsRef, (snapshot) => {
-                state.hourlyLogs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if(activeTab === 'hourly' || activeTab === 'report') renderActiveTab();
-            }, console.error));
-
-            const categoriesRef = collection(db, `${basePath}/categories`);
-            unsubscribes.push(onSnapshot(categoriesRef, (snapshot) => {
-                if (!snapshot.empty) {
-                    state.categories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                }
-                populateDropdowns();
-                renderActiveTab();
-            }, console.error));
-        }
-
-        function renderNavigation() {
-            els.navMenu.innerHTML = navItems.map(item => `
+        <div class="flex-1 mt-16 md:mt-4 overflow-y-auto">
+            <ul class="space-y-2 px-4">
                 <li>
-                    <button data-tab="${item.id}" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left ${activeTab === item.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}">
-                        <i class="fas ${item.icon} w-5 text-center ${activeTab === item.id ? 'text-blue-600' : 'text-gray-400'}"></i>
-                        ${item.label}
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors bg-slate-800 text-white">
+                        <i class="fa-solid fa-calendar-day w-6 text-center mr-2"></i> Today's Work
                     </button>
                 </li>
-            `).join('');
+                <li>
+                    <button onclick="switchTab('work-manager')" id="nav-work-manager" class="nav-btn w-full flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
+                        <i class="fa-solid fa-list-check w-6 text-center mr-2"></i> Work Manager
+                    </button>
+                </li>
+                <li>
+                    <button onclick="switchTab('hourly-report')" id="nav-hourly-report" class="nav-btn w-full flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
+                        <i class="fa-solid fa-clock w-6 text-center mr-2"></i> Hourly Report
+                    </button>
+                </li>
+                <li>
+                    <button onclick="switchTab('reports')" id="nav-reports" class="nav-btn w-full flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
+                        <i class="fa-solid fa-chart-pie w-6 text-center mr-2"></i> Reports
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="p-4 border-t border-slate-700 text-sm text-slate-500 text-center">
+            &copy; 2026 WorkHub Mgmt
+        </div>
+    </nav>
 
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    activeTab = e.currentTarget.dataset.tab;
-                    renderNavigation();
-                    renderActiveTab();
-                    closeSidebar();
-                });
-            });
-        }
+    <!-- Main Content Area -->
+    <main class="flex-1 h-full overflow-y-auto bg-gray-50 pt-16 md:pt-0 relative w-full">
+        
+        <!-- Tab 1: Dashboard (Today's Work & Work Done By) -->
+        <div id="dashboard" class="tab-content active p-6 max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Today's Work <span id="today-date-display" class="text-lg text-gray-500 font-normal ml-2"></span></h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Calendar / Agenda View -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="text-xl font-semibold mb-4 border-b pb-2"><i class="fa-regular fa-calendar text-indigo-500 mr-2"></i> Scheduled for Today</h3>
+                    <div id="today-agenda" class="space-y-4">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
 
-        function populateDropdowns() {
-            const taskCat = document.getElementById('task-category');
-            const logCat = document.getElementById('log-category');
-            const taskAssign = document.getElementById('task-assigned-to');
-
-            const catHtml = state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-            taskCat.innerHTML = catHtml;
-            logCat.innerHTML = catHtml;
-
-            taskAssign.innerHTML = state.teamMembers.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
-        }
-
-        function renderActiveTab() {
-            switch (activeTab) {
-                case 'today': els.content.innerHTML = renderTodaysWork(); break;
-                case 'manager': els.content.innerHTML = renderWorkManager(); break;
-                case 'hourly': els.content.innerHTML = renderHourlyReport(); break;
-                case 'report': els.content.innerHTML = renderReportTab(); break;
-                case 'assistant': els.content.innerHTML = renderPlaceholder("AI Assistant", "Your smart assistant is currently learning how to help you manage your work better. Coming soon!", "fa-robot", "text-blue-500", "bg-blue-50"); break;
-                case 'team': els.content.innerHTML = renderPlaceholder("Work Done By (Team)", "View detailed analytics on team performance and task completion rates. This feature is under development.", "fa-users", "text-teal-500", "bg-teal-50"); break;
-            }
-        }
-
-        function renderWorkManager() {
-            let rows = state.tasks.length === 0 ? `
-                <tr><td colspan="7" class="p-8 text-center text-gray-500">No tasks found. Click "Add Task" to create one.</td></tr>
-            ` : state.tasks.map(task => {
-                const overdue = isOverdue(task.dueDate, task.status);
-                const catName = state.categories.find(c => c.id === task.category)?.name || 'Unknown';
-                const memberName = state.teamMembers.find(m => m.id === task.assignedTo)?.name || 'Unknown';
-                
-                return `
-                <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors ${overdue ? 'bg-red-50/30' : ''}">
-                    <td class="p-4">
-                        <button class="focus:outline-none toggle-task-btn" data-id="${task.id}">
-                            ${task.status === 'completed' 
-                                ? '<i class="fas fa-check-circle text-2xl text-green-500"></i>' 
-                                : '<div class="w-6 h-6 rounded-full border-2 border-gray-300 hover:border-blue-500 transition-colors"></div>'
-                            }
-                        </button>
-                    </td>
-                    <td class="p-4 font-medium text-gray-800">
-                        <div class="${task.status === 'completed' ? 'line-through text-gray-400' : ''}">
-                            ${task.name}
-                            ${overdue ? '<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Overdue</span>' : ''}
-                        </div>
-                    </td>
-                    <td class="p-4 text-gray-600 hidden md:table-cell">${catName}</td>
-                    <td class="p-4 text-gray-500 text-sm hidden lg:table-cell">${task.assignedDate}</td>
-                    <td class="p-4 text-sm ${overdue ? 'text-red-600 font-bold' : 'text-gray-600'}">${task.dueDate || 'N/A'}</td>
-                    <td class="p-4 text-gray-600 hidden sm:table-cell">${memberName}</td>
-                    <td class="p-4 text-right">
-                        <button class="delete-task-btn p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full hover:bg-red-50" data-id="${task.id}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>`;
-            }).join('');
-
-            return `
-            <div class="mb-6 flex justify-between items-center">
-                <h2 class="text-2xl font-bold text-gray-800">Work Manager</h2>
-                <button id="btn-open-add-task" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm">
-                    <i class="fas fa-plus"></i> <span class="hidden sm:inline">Add Task</span>
-                </button>
+                <!-- Work Done By Summary -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="text-xl font-semibold mb-4 border-b pb-2"><i class="fa-solid fa-users text-emerald-500 mr-2"></i> Work Done By</h3>
+                    <div id="work-done-summary" class="space-y-4">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
             </div>
+        </div>
+
+        <!-- Tab 2: Work Manager -->
+        <div id="work-manager" class="tab-content p-6 max-w-7xl mx-auto">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <h2 class="text-3xl font-bold text-gray-800">Work Manager</h2>
+                <div class="flex gap-2">
+                    <button onclick="openCategoryModal()" class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-medium transition shadow-sm">
+                        <i class="fa-solid fa-tags mr-1"></i> Add Head
+                    </button>
+                    <button onclick="openTaskModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm">
+                        <i class="fa-solid fa-plus mr-1"></i> Add Task
+                    </button>
+                </div>
+            </div>
+
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-gray-50 border-b border-gray-100 text-gray-600 text-sm">
-                                <th class="p-4 font-semibold w-16">Status</th>
+                            <tr class="bg-gray-50 border-b border-gray-200 text-gray-600 text-sm uppercase tracking-wider">
                                 <th class="p-4 font-semibold">Work Name</th>
-                                <th class="p-4 font-semibold hidden md:table-cell">Category</th>
-                                <th class="p-4 font-semibold hidden lg:table-cell">Assigned Date</th>
+                                <th class="p-4 font-semibold">Category</th>
+                                <th class="p-4 font-semibold">Assigned To</th>
+                                <th class="p-4 font-semibold">Assigned Date</th>
+                                <th class="p-4 font-semibold">Schedule Date</th>
                                 <th class="p-4 font-semibold">Due Date</th>
-                                <th class="p-4 font-semibold hidden sm:table-cell">Assigned To</th>
-                                <th class="p-4 font-semibold text-right">Actions</th>
+                                <th class="p-4 font-semibold">Status</th>
+                                <th class="p-4 font-semibold text-center">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>${rows}</tbody>
+                        <tbody id="task-table-body" class="divide-y divide-gray-100">
+                            <!-- Populated by JS -->
+                        </tbody>
                     </table>
                 </div>
-            </div>`;
-        }
-
-        function renderTodaysWork() {
-            const today = getTodayString();
-            const todaysTasks = state.tasks.filter(t => t.scheduleDate === today || t.dueDate === today);
-
-            let content = todaysTasks.length === 0 ? `
-                <div class="col-span-full bg-white p-8 rounded-xl border border-gray-100 text-center shadow-sm">
-                    <i class="fas fa-calendar-alt text-5xl text-gray-300 mb-4 block"></i>
-                    <p class="text-gray-500">No tasks scheduled or due today. Enjoy your day or add some work!</p>
-                </div>
-            ` : todaysTasks.map(task => {
-                const overdue = isOverdue(task.dueDate, task.status);
-                const catName = state.categories.find(c => c.id === task.category)?.name || 'No Category';
-                const memberName = state.teamMembers.find(m => m.id === task.assignedTo)?.name || 'Unassigned';
-                const borderClass = task.status === 'completed' ? 'bg-green-500' : (overdue ? 'bg-red-500' : 'bg-blue-500');
-
-                return `
-                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-1 h-full ${borderClass}"></div>
-                    <div class="flex justify-between items-start mb-3">
-                        <h3 class="font-semibold ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-800'} text-lg leading-tight">${task.name}</h3>
-                        ${task.status === 'completed' ? '<i class="fas fa-check-circle text-green-500 shrink-0"></i>' : ''}
-                    </div>
-                    <div class="space-y-2 text-sm text-gray-600">
-                        <div class="flex items-center gap-2"><i class="fas fa-briefcase w-4 text-gray-400"></i> <span>${catName}</span></div>
-                        <div class="flex items-center gap-2"><i class="fas fa-user w-4 text-gray-400"></i> <span>${memberName}</span></div>
-                        <div class="flex items-center gap-2 ${overdue ? 'text-red-600 font-medium' : ''}"><i class="fas fa-clock w-4 text-gray-400"></i> <span>Due: ${task.dueDate || 'N/A'}</span></div>
-                    </div>
-                </div>`;
-            }).join('');
-
-            const dateStr = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-            return `
-            <div class="flex items-center gap-3 mb-6">
-                <div class="p-3 bg-blue-100 text-blue-600 rounded-xl"><i class="fas fa-calendar-alt text-xl"></i></div>
-                <div>
-                    <h2 class="text-2xl font-bold text-gray-800">Today's Work</h2>
-                    <p class="text-gray-500 text-sm">${dateStr}</p>
-                </div>
             </div>
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">${content}</div>`;
-        }
+        </div>
 
-        function renderHourlyReport() {
-            const logsForDate = state.hourlyLogs.filter(log => log.date === state.selectedReportDate);
-            
-            const totalMinutesLogged = logsForDate.reduce((acc, curr) => acc + (curr.hours * 60) + curr.minutes, 0);
-            const workingHoursStr = `${Math.floor(totalMinutesLogged / 60)}h ${totalMinutesLogged % 60}m`;
-            const totalDayMinutes = 24 * 60;
-            const assumedSleepMinutes = 8 * 60; 
-            const freeMinutes = totalDayMinutes - totalMinutesLogged - assumedSleepMinutes;
-            const freeHoursStr = `${Math.floor(Math.max(0, freeMinutes) / 60)}h ${Math.max(0, freeMinutes) % 60}m`;
-
-            let logsHtml = logsForDate.length === 0 ? `
-                <div class="p-8 text-center text-gray-500">
-                    <i class="fas fa-clock text-5xl text-gray-300 block mb-4"></i>
-                    <p>No hours logged for ${state.selectedReportDate}.</p>
-                </div>
-            ` : `<div class="divide-y divide-gray-100">` + logsForDate.map(log => {
-                const catName = state.categories.find(c => c.id === log.category)?.name || 'Misc';
-                return `
-                <div class="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                    <div>
-                        <h4 class="font-semibold text-gray-800">${log.workName}</h4>
-                        <div class="flex items-center gap-3 text-sm mt-1 text-gray-500">
-                            <span class="bg-gray-100 px-2 py-0.5 rounded text-xs font-medium text-gray-600">${catName}</span>
-                            <span>${log.hours}h ${log.minutes}m</span>
-                        </div>
+        <!-- Tab 3: Hourly Report -->
+        <div id="hourly-report" class="tab-content p-6 max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h2 class="text-3xl font-bold text-gray-800">Hourly Report</h2>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 px-3 py-2">
+                        <i class="fa-regular fa-calendar mr-2 text-gray-400"></i>
+                        <input type="date" id="hourly-date-picker" class="outline-none text-gray-700 bg-transparent cursor-pointer" onchange="loadHourlyReport()">
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button class="edit-log-btn p-2 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition-colors" data-log='${JSON.stringify(log)}'>
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="delete-log-btn p-2 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors" data-id="${log.id}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>`;
-            }).join('') + `</div>`;
-
-            return `
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div>
-                    <h2 class="text-2xl font-bold text-gray-800">Hourly Report</h2>
-                    <p class="text-gray-500 text-sm">Track your daily 24-hour distribution</p>
-                </div>
-                <div class="flex items-center gap-3 w-full sm:w-auto">
-                    <input type="date" id="report-date-picker" value="${state.selectedReportDate}" class="p-2 border border-gray-300 rounded-lg shadow-sm outline-none w-full sm:w-auto focus:ring-2 focus:ring-indigo-500">
-                    <button id="btn-open-log" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-lg shadow-sm transition-colors shrink-0">
-                        <i class="fas fa-plus px-1"></i>
+                    <button onclick="downloadHourlyReport()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm whitespace-nowrap">
+                        <i class="fa-solid fa-download mr-1"></i> Download
                     </button>
                 </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-4 mb-6">
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-indigo-100 flex flex-col items-center justify-center text-center">
-                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Working</span>
-                    <span class="text-xl sm:text-2xl font-bold text-indigo-600">${workingHoursStr}</span>
+            <!-- Smart Report Header -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-l-4 border-l-indigo-500 border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium uppercase">Working Hours</p>
+                        <p id="stat-work-hrs" class="text-2xl font-bold text-gray-800">0h 0m</p>
+                    </div>
+                    <div class="h-10 w-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 text-xl"><i class="fa-solid fa-briefcase"></i></div>
                 </div>
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-green-100 flex flex-col items-center justify-center text-center">
-                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Free Time</span>
-                    <span class="text-xl sm:text-2xl font-bold text-green-600">${freeHoursStr}</span>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-l-4 border-l-amber-400 border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium uppercase">Free / Break Hours</p>
+                        <p id="stat-free-hrs" class="text-2xl font-bold text-gray-800">0h 0m</p>
+                    </div>
+                    <div class="h-10 w-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 text-xl"><i class="fa-solid fa-mug-hot"></i></div>
                 </div>
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-purple-100 flex flex-col items-center justify-center text-center">
-                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Sleep (Est)</span>
-                    <span class="text-xl sm:text-2xl font-bold text-purple-600">8h 0m</span>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-l-4 border-l-slate-500 border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium uppercase">Sleep Hours</p>
+                        <p id="stat-sleep-hrs" class="text-2xl font-bold text-gray-800">0h 0m</p>
+                    </div>
+                    <div class="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 text-xl"><i class="fa-solid fa-bed"></i></div>
                 </div>
             </div>
 
+            <!-- 24 Hour Grid -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                ${logsHtml}
-            </div>`;
-        }
+                <div class="bg-gray-50 px-6 py-3 border-b border-gray-200 grid grid-cols-12 gap-4 text-sm font-semibold text-gray-600 uppercase">
+                    <div class="col-span-2 md:col-span-1">Time</div>
+                    <div class="col-span-4 md:col-span-4">Work Name</div>
+                    <div class="col-span-3 md:col-span-3">Category (Head)</div>
+                    <div class="col-span-3 md:col-span-2">Type</div>
+                    <div class="col-span-12 md:col-span-2 text-right">Time Taken (Mins)</div>
+                </div>
+                <div id="hourly-grid" class="divide-y divide-gray-100">
+                    <!-- Populated by JS (24 rows) -->
+                </div>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button onclick="saveHourlyLogs()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition shadow-sm">
+                    Save Hourly Log
+                </button>
+            </div>
+        </div>
 
-        function renderReportTab() {
-            const uniqueCats = new Set(state.hourlyLogs.map(l => l.category)).size;
-            const earliestDate = state.hourlyLogs.length > 0 
-                ? new Date(Math.min(...state.hourlyLogs.map(l => new Date(l.date).getTime()))).toLocaleDateString() 
-                : 'N/A';
-
-            return `
-            <div class="flex items-center gap-3 mb-6">
-                <div class="p-3 bg-purple-100 text-purple-600 rounded-xl"><i class="fas fa-file-alt text-xl"></i></div>
-                <div>
-                    <h2 class="text-2xl font-bold text-gray-800">Auto Generated Report</h2>
-                    <p class="text-gray-500 text-sm">Download your smart reports</p>
+        <!-- Tab 4: Reports -->
+        <div id="reports" class="tab-content p-6 max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Auto Generated Report</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 text-center">
+                    <p class="text-gray-500 text-sm font-medium uppercase mb-1">Total Tasks</p>
+                    <p id="rep-total" class="text-3xl font-bold text-gray-800">0</p>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 text-center">
+                    <p class="text-gray-500 text-sm font-medium uppercase mb-1">Completed</p>
+                    <p id="rep-completed" class="text-3xl font-bold text-emerald-600">0</p>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 text-center">
+                    <p class="text-gray-500 text-sm font-medium uppercase mb-1">Pending</p>
+                    <p id="rep-pending" class="text-3xl font-bold text-amber-500">0</p>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 text-center">
+                    <p class="text-gray-500 text-sm font-medium uppercase mb-1">Overdue</p>
+                    <p id="rep-overdue" class="text-3xl font-bold text-red-600">0</p>
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm max-w-2xl">
-                <h3 class="text-lg font-semibold mb-4 text-gray-800">Generate Smart Report</h3>
-                <p class="text-gray-600 mb-6">Generate a comprehensive report of all logged hours, categorized by work type. This report helps in tracking productivity and billing.</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Task by Category -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="text-xl font-semibold mb-4 border-b pb-2">Tasks by Category (Head)</h3>
+                    <div id="rep-categories" class="space-y-3">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
                 
-                <div class="bg-purple-50 p-4 rounded-lg border border-purple-100 mb-6">
-                    <h4 class="font-medium text-purple-800 mb-2 flex items-center gap-2">
-                        <i class="fas fa-info-circle"></i> Report Insights
-                    </h4>
-                    <ul class="text-sm text-purple-700 space-y-1 list-disc list-inside">
-                        <li>Total Logs Recorded: ${state.hourlyLogs.length}</li>
-                        <li>Unique Categories Used: ${uniqueCats}</li>
-                        <li>Data from: ${earliestDate} to Present</li>
-                    </ul>
+                <!-- Recent Activity/Logs Overview -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="text-xl font-semibold mb-4 border-b pb-2">Recent Hourly Summaries</h3>
+                    <div id="rep-hourly-summary" class="space-y-4">
+                        <!-- Populated by JS -->
+                    </div>
                 </div>
+            </div>
+        </div>
 
-                <button id="btn-download-csv" class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors w-full sm:w-auto justify-center">
-                    <i class="fas fa-download"></i> Download CSV Report
+    </main>
+
+    <!-- Modals -->
+    
+    <!-- Add Task Modal -->
+    <div id="task-modal" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-50 flex items-center justify-center hidden opacity-0 transition-opacity">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden transform scale-95 transition-transform" id="task-modal-content">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="text-xl font-bold text-gray-800" id="task-modal-title">Add New Task</h3>
+                <button onclick="closeTaskModal()" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                    <i class="fa-solid fa-xmark text-xl"></i>
                 </button>
-            </div>`;
-        }
-
-        function renderPlaceholder(title, desc, icon, color, bg) {
-            return `
-            <div class="p-8 flex flex-col items-center justify-center min-h-[60vh] text-center">
-                <div class="w-20 h-20 ${bg} rounded-full flex items-center justify-center mb-4">
-                    <i class="fas ${icon} text-4xl ${color}"></i>
+            </div>
+            <form id="task-form" onsubmit="submitTask(event)" class="p-6">
+                <input type="hidden" id="task-id">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Work Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="task-name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
-                <h2 class="text-2xl font-bold text-gray-800 mb-2">${title}</h2>
-                <p class="text-gray-500 max-w-md">${desc}</p>
-            </div>`;
-        }
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Category (Head)</label>
+                        <select id="task-category" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Assigned To</label>
+                        <select id="task-assigned-to" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Assigned Date</label>
+                        <input type="date" id="task-assigned-date" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Due Date <span class="text-red-500">*</span></label>
+                        <input type="date" id="task-due-date" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Schedule Work (Date)</label>
+                    <input type="date" id="task-schedule-date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeTaskModal()" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium transition shadow-sm">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        document.getElementById('btn-open-sidebar').addEventListener('click', openSidebar);
-        document.getElementById('btn-close-sidebar').addEventListener('click', closeSidebar);
-        els.mobileOverlay.addEventListener('click', closeSidebar);
+    <!-- Add Category (Head) Modal -->
+    <div id="category-modal" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-50 flex items-center justify-center hidden opacity-0 transition-opacity">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden transform scale-95 transition-transform" id="category-modal-content">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="text-xl font-bold text-gray-800">Add New Head</h3>
+                <button onclick="closeCategoryModal()" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <form id="category-form" onsubmit="submitCategory(event)" class="p-6">
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Category Name</label>
+                    <input type="text" id="new-category-name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. Marketing, IT Support...">
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeCategoryModal()" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium transition shadow-sm">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        function openModal(modalEl) {
-            els.modalBackdrop.classList.remove('hidden');
-            els.modalBackdrop.classList.add('flex');
-            modalEl.classList.remove('hidden');
-        }
+    <script>
+        /* --- STATE MANAGEMENT --- */
+        const getToday = () => new Date().toISOString().split('T')[0];
 
-        function closeModals() {
-            els.modalBackdrop.classList.add('hidden');
-            els.modalBackdrop.classList.remove('flex');
-            els.modalAddTask.classList.add('hidden');
-            els.modalLogTime.classList.add('hidden');
-        }
-
-        document.querySelectorAll('.modal-close-btn').forEach(btn => btn.addEventListener('click', closeModals));
-        
-        document.getElementById('content-area').addEventListener('click', async (e) => {
-            if (e.target.closest('#btn-open-add-task')) {
-                document.getElementById('form-add-task').reset();
-                document.getElementById('task-assigned-date').value = getTodayString();
-                document.getElementById('task-schedule-date').value = getTodayString();
-                openModal(els.modalAddTask);
+        let state = {
+            categories: ["Administration", "Development", "Marketing", "Meetings", "Personal"],
+            team: ["Self", "Alice", "Bob", "Charlie"],
+            tasks: [
+                { id: 1, name: "Prepare Monthly Report", category: "Administration", assignedDate: "2026-05-25", scheduleDate: "2026-05-30", dueDate: "2026-05-29", assignedTo: "Self", status: "pending" }, // Overdue
+                { id: 2, name: "Website Redesign Pitch", category: "Marketing", assignedDate: "2026-05-30", scheduleDate: "2026-05-30", dueDate: "2026-06-05", assignedTo: "Alice", status: "pending" },
+                { id: 3, name: "Fix Database Bug", category: "Development", assignedDate: "2026-05-28", scheduleDate: "2026-05-29", dueDate: "2026-05-29", assignedTo: "Bob", status: "completed" },
+                { id: 4, name: "Client Meeting Prep", category: "Meetings", assignedDate: "2026-05-30", scheduleDate: "2026-05-30", dueDate: "2026-05-30", assignedTo: "Self", status: "pending" }
+            ],
+            hourlyLogs: {
+                // Pre-fill some data for today for demonstration
+                [getToday()]: [
+                    { hour: 0, workName: "Sleep", category: "Personal", type: "sleep", timeTaken: 60 },
+                    { hour: 1, workName: "Sleep", category: "Personal", type: "sleep", timeTaken: 60 },
+                    { hour: 2, workName: "Sleep", category: "Personal", type: "sleep", timeTaken: 60 },
+                    { hour: 3, workName: "Sleep", category: "Personal", type: "sleep", timeTaken: 60 },
+                    { hour: 4, workName: "Sleep", category: "Personal", type: "sleep", timeTaken: 60 },
+                    { hour: 5, workName: "Sleep", category: "Personal", type: "sleep", timeTaken: 60 },
+                    { hour: 6, workName: "Morning Routine", category: "Personal", type: "free", timeTaken: 60 },
+                    { hour: 7, workName: "Commute & Breakfast", category: "Personal", type: "free", timeTaken: 60 },
+                    { hour: 8, workName: "Emails & Admin", category: "Administration", type: "work", timeTaken: 60 },
+                    { hour: 9, workName: "Development Sprint", category: "Development", type: "work", timeTaken: 60 },
+                    { hour: 10, workName: "Development Sprint", category: "Development", type: "work", timeTaken: 60 },
+                ]
             }
+        };
+
+        // Utility: Format Date
+        const formatDate = (dateStr) => {
+            if (!dateStr) return "-";
+            const options = { month: 'short', day: 'numeric', year: 'numeric' };
+            return new Date(dateStr).toLocaleDateString('en-US', options);
+        };
+
+        // Utility: Check if Overdue
+        const isOverdue = (dueDate, status) => {
+            if (status === 'completed' || !dueDate) return false;
+            const due = new Date(dueDate).setHours(0,0,0,0);
+            const today = new Date().setHours(0,0,0,0);
+            return due < today;
+        };
+
+        /* --- INITIALIZATION --- */
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('today-date-display').innerText = `(${formatDate(getToday())})`;
+            document.getElementById('hourly-date-picker').value = getToday();
             
-            const toggleBtn = e.target.closest('.toggle-task-btn');
-            if (toggleBtn && currentUser) {
-                const taskId = toggleBtn.dataset.id;
-                const task = state.tasks.find(t => t.id === taskId);
-                if (task) {
-                    const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-                    await updateDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/tasks`, taskId), { status: newStatus });
-                }
-            }
+            updateCategoryDropdowns();
+            updateTeamDropdowns();
+            
+            // Initial Render of all tabs
+            renderDashboard();
+            renderWorkManager();
+            loadHourlyReport();
+            renderReports();
 
-            const delTaskBtn = e.target.closest('.delete-task-btn');
-            if (delTaskBtn && currentUser) {
-                const taskId = delTaskBtn.dataset.id;
-                await deleteDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/tasks`, taskId));
-            }
-
-            if (e.target.closest('#btn-open-log')) {
-                document.getElementById('form-log-time').reset();
-                document.getElementById('log-id').value = '';
-                document.getElementById('log-date').value = state.selectedReportDate;
-                document.getElementById('log-modal-title').textContent = 'Log Time';
-                openModal(els.modalLogTime);
-            }
-
-            const editLogBtn = e.target.closest('.edit-log-btn');
-            if (editLogBtn) {
-                const log = JSON.parse(editLogBtn.dataset.log);
-                document.getElementById('log-id').value = log.id;
-                document.getElementById('log-date').value = log.date;
-                document.getElementById('log-work-name').value = log.workName;
-                document.getElementById('log-category').value = log.category;
-                document.getElementById('log-hours').value = log.hours;
-                document.getElementById('log-minutes').value = log.minutes;
-                document.getElementById('log-modal-title').textContent = 'Edit Log';
-                openModal(els.modalLogTime);
-            }
-
-            const delLogBtn = e.target.closest('.delete-log-btn');
-            if (delLogBtn && currentUser) {
-                const logId = delLogBtn.dataset.id;
-                await deleteDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/hourlyLogs`, logId));
-            }
-
-            if (e.target.closest('#btn-download-csv')) {
-                let csvContent = "data:text/csv;charset=utf-8,Date,Work Name,Category,Hours,Minutes\n";
-                state.hourlyLogs.forEach(log => {
-                    const catName = state.categories.find(c => c.id === log.category)?.name || 'Unknown';
-                    csvContent += `${log.date},"${log.workName}","${catName}",${log.hours},${log.minutes}\n`;
-                });
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `work_report_${getTodayString()}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
+            // Mobile menu toggle
+            document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.toggle('-translate-x-full');
+            });
         });
 
-        document.getElementById('content-area').addEventListener('change', (e) => {
-            if (e.target.id === 'report-date-picker') {
-                state.selectedReportDate = e.target.value;
-                renderActiveTab();
-            }
-        });
+        /* --- NAVIGATION --- */
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            // Reset nav buttons
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('bg-slate-800', 'text-white');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById('nav-' + tabId).classList.add('bg-slate-800', 'text-white');
 
-        document.getElementById('form-add-task').addEventListener('submit', async (e) => {
+            // Close mobile menu if open
+            if(window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+            }
+
+            // Refresh specific data just in case
+            if(tabId === 'dashboard') renderDashboard();
+            if(tabId === 'work-manager') renderWorkManager();
+            if(tabId === 'reports') renderReports();
+        }
+
+        /* --- TAB 1: DASHBOARD --- */
+        function renderDashboard() {
+            const todayStr = getToday();
+            
+            // Scheduled for Today
+            const todaysTasks = state.tasks.filter(t => t.scheduleDate === todayStr || (t.dueDate === todayStr && t.status !== 'completed'));
+            const agendaContainer = document.getElementById('today-agenda');
+            
+            if (todaysTasks.length === 0) {
+                agendaContainer.innerHTML = `<p class="text-gray-500 italic py-4">No tasks scheduled for today. Enjoy your day!</p>`;
+            } else {
+                agendaContainer.innerHTML = todaysTasks.map(task => `
+                    <div class="flex items-start p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition ${isOverdue(task.dueDate, task.status) ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-indigo-500'}">
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800 ${task.status === 'completed' ? 'line-through text-gray-400' : ''}">${task.name}</h4>
+                            <p class="text-sm text-gray-500"><span class="bg-gray-100 px-2 py-0.5 rounded text-xs mr-2">${task.category}</span> Assigned to: ${task.assignedTo}</p>
+                        </div>
+                        <div class="ml-4 flex items-center">
+                            <button onclick="toggleTaskStatus(${task.id})" class="text-2xl ${task.status === 'completed' ? 'text-emerald-500' : 'text-gray-300 hover:text-emerald-400'}">
+                                <i class="fa-${task.status === 'completed' ? 'solid' : 'regular'} fa-circle-check"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Work Done By Summary
+            const completedTasks = state.tasks.filter(t => t.status === 'completed');
+            const workDoneCount = {};
+            state.team.forEach(member => workDoneCount[member] = 0);
+            completedTasks.forEach(t => {
+                if(workDoneCount[t.assignedTo] !== undefined) workDoneCount[t.assignedTo]++;
+            });
+
+            const summaryContainer = document.getElementById('work-done-summary');
+            summaryContainer.innerHTML = state.team.map(member => `
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm mr-3">
+                            ${member.charAt(0)}
+                        </div>
+                        <span class="font-medium text-gray-700">${member}</span>
+                    </div>
+                    <span class="bg-white border border-gray-200 px-3 py-1 rounded-full text-sm font-semibold text-gray-600">
+                        ${workDoneCount[member]} tasks
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        /* --- TAB 2: WORK MANAGER --- */
+        function renderWorkManager() {
+            const tbody = document.getElementById('task-table-body');
+            
+            if (state.tasks.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-500 italic">No tasks found. Add a task to get started.</td></tr>`;
+                return;
+            }
+
+            // Sort: pending first, then by due date
+            const sortedTasks = [...state.tasks].sort((a, b) => {
+                if (a.status !== b.status) return a.status === 'pending' ? -1 : 1;
+                return new Date(a.dueDate) - new Date(b.dueDate);
+            });
+
+            tbody.innerHTML = sortedTasks.map(task => {
+                const overdue = isOverdue(task.dueDate, task.status);
+                const rowClass = overdue ? "bg-red-50 hover:bg-red-100" : "hover:bg-gray-50";
+                const textClass = overdue ? "text-red-700 font-medium" : "text-gray-800";
+                
+                return `
+                    <tr class="border-b border-gray-100 transition-colors ${rowClass}">
+                        <td class="p-4 ${textClass} ${task.status === 'completed' ? 'line-through text-gray-400' : ''}">
+                            ${overdue ? '<i class="fa-solid fa-triangle-exclamation text-red-500 mr-1" title="Overdue"></i> ' : ''}${task.name}
+                        </td>
+                        <td class="p-4 text-gray-600"><span class="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs">${task.category}</span></td>
+                        <td class="p-4 text-gray-600">${task.assignedTo}</td>
+                        <td class="p-4 text-gray-600 text-sm">${formatDate(task.assignedDate)}</td>
+                        <td class="p-4 text-gray-600 text-sm">${formatDate(task.scheduleDate)}</td>
+                        <td class="p-4 text-sm ${overdue ? 'text-red-600 font-bold' : 'text-gray-600'}">${formatDate(task.dueDate)}</td>
+                        <td class="p-4">
+                            <span class="px-2 py-1 rounded text-xs font-semibold ${task.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
+                                ${task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                            </span>
+                        </td>
+                        <td class="p-4 text-center">
+                            <button onclick="toggleTaskStatus(${task.id})" class="text-gray-400 hover:text-emerald-500 mr-2 transition" title="Mark Complete/Pending">
+                                <i class="fa-solid fa-check"></i>
+                            </button>
+                            <button onclick="editTask(${task.id})" class="text-gray-400 hover:text-indigo-500 mr-2 transition" title="Edit">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="deleteTask(${task.id})" class="text-gray-400 hover:text-red-500 transition" title="Delete">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function toggleTaskStatus(id) {
+            const task = state.tasks.find(t => t.id === id);
+            if(task) {
+                task.status = task.status === 'pending' ? 'completed' : 'pending';
+                renderDashboard();
+                renderWorkManager();
+                renderReports();
+            }
+        }
+
+        function deleteTask(id) {
+            if(confirm("Are you sure you want to delete this task?")) {
+                state.tasks = state.tasks.filter(t => t.id !== id);
+                renderDashboard();
+                renderWorkManager();
+                renderReports();
+            }
+        }
+
+        /* --- MODALS (TASK & CATEGORY) --- */
+        function openTaskModal() {
+            document.getElementById('task-form').reset();
+            document.getElementById('task-id').value = '';
+            document.getElementById('task-modal-title').innerText = "Add New Task";
+            
+            // Set defaults
+            document.getElementById('task-assigned-date').value = getToday();
+            document.getElementById('task-due-date').value = getToday();
+            document.getElementById('task-schedule-date').value = getToday();
+            
+            const modal = document.getElementById('task-modal');
+            const content = document.getElementById('task-modal-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeTaskModal() {
+            const modal = document.getElementById('task-modal');
+            const content = document.getElementById('task-modal-content');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function editTask(id) {
+            const task = state.tasks.find(t => t.id === id);
+            if(!task) return;
+
+            document.getElementById('task-id').value = task.id;
+            document.getElementById('task-name').value = task.name;
+            document.getElementById('task-category').value = task.category;
+            document.getElementById('task-assigned-to').value = task.assignedTo;
+            document.getElementById('task-assigned-date').value = task.assignedDate;
+            document.getElementById('task-due-date').value = task.dueDate;
+            document.getElementById('task-schedule-date').value = task.scheduleDate || '';
+            
+            document.getElementById('task-modal-title').innerText = "Edit Task";
+            
+            const modal = document.getElementById('task-modal');
+            const content = document.getElementById('task-modal-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function submitTask(e) {
             e.preventDefault();
-            if (!currentUser) return;
-            const newTask = {
+            const id = document.getElementById('task-id').value;
+            
+            const taskData = {
                 name: document.getElementById('task-name').value,
                 category: document.getElementById('task-category').value,
+                assignedTo: document.getElementById('task-assigned-to').value,
                 assignedDate: document.getElementById('task-assigned-date').value,
                 dueDate: document.getElementById('task-due-date').value,
-                scheduleDate: document.getElementById('task-schedule-date').value,
-                assignedTo: document.getElementById('task-assigned-to').value,
-                status: 'pending'
+                scheduleDate: document.getElementById('task-schedule-date').value
             };
-            try {
-                await addDoc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/tasks`), newTask);
-                closeModals();
-            } catch (error) { console.error("Error adding task", error); }
-        });
 
-        const wrapperSelect = document.getElementById('category-select-wrapper');
-        const wrapperAdd = document.getElementById('category-add-wrapper');
-        const inputNewCat = document.getElementById('new-category-name');
+            if (id) {
+                // Update
+                const index = state.tasks.findIndex(t => t.id == id);
+                state.tasks[index] = { ...state.tasks[index], ...taskData };
+            } else {
+                // Add
+                const newId = state.tasks.length > 0 ? Math.max(...state.tasks.map(t => t.id)) + 1 : 1;
+                state.tasks.push({ id: newId, status: 'pending', ...taskData });
+            }
 
-        document.getElementById('btn-show-add-category').addEventListener('click', () => {
-            wrapperSelect.classList.add('hidden');
-            wrapperAdd.classList.remove('hidden');
-            wrapperAdd.classList.add('flex');
-            inputNewCat.focus();
-        });
+            closeTaskModal();
+            renderDashboard();
+            renderWorkManager();
+            renderReports();
+        }
 
-        document.getElementById('btn-cancel-category').addEventListener('click', () => {
-            wrapperAdd.classList.add('hidden');
-            wrapperAdd.classList.remove('flex');
-            wrapperSelect.classList.remove('hidden');
-            inputNewCat.value = '';
-        });
+        function openCategoryModal() {
+            const modal = document.getElementById('category-modal');
+            const content = document.getElementById('category-modal-content');
+            document.getElementById('new-category-name').value = '';
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            }, 10);
+        }
 
-        document.getElementById('btn-add-category').addEventListener('click', async () => {
-            if (!currentUser) return;
-            const name = inputNewCat.value.trim();
-            if (!name) return;
-            try {
-                const docRef = await addDoc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/categories`), { name });
-                wrapperAdd.classList.add('hidden');
-                wrapperAdd.classList.remove('flex');
-                wrapperSelect.classList.remove('hidden');
-                inputNewCat.value = '';
-            } catch (error) { console.error("Error adding category", error); }
-        });
+        function closeCategoryModal() {
+            const modal = document.getElementById('category-modal');
+            const content = document.getElementById('category-modal-content');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
 
-        document.getElementById('form-log-time').addEventListener('submit', async (e) => {
+        function submitCategory(e) {
             e.preventDefault();
-            if (!currentUser) return;
+            const val = document.getElementById('new-category-name').value.trim();
+            if(val && !state.categories.includes(val)) {
+                state.categories.push(val);
+                state.categories.sort();
+                updateCategoryDropdowns();
+                // update hourly grid dropdowns if it's open
+                loadHourlyReport(); 
+            }
+            closeCategoryModal();
+        }
 
-            const logId = document.getElementById('log-id').value;
-            const logData = {
-                date: document.getElementById('log-date').value,
-                workName: document.getElementById('log-work-name').value,
-                category: document.getElementById('log-category').value,
-                hours: parseInt(document.getElementById('log-hours').value) || 0,
-                minutes: parseInt(document.getElementById('log-minutes').value) || 0,
-                timestamp: new Date().getTime()
-            };
+        function updateCategoryDropdowns() {
+            const options = state.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('task-category').innerHTML = options;
+        }
 
-            try {
-                const logsRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/hourlyLogs`);
-                if (logId) {
-                    await updateDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/hourlyLogs`, logId), logData);
-                } else {
-                    await addDoc(logsRef, logData);
-                }
-                closeModals();
-            } catch (error) { console.error("Error saving log", error); }
-        });
+        function updateTeamDropdowns() {
+            const options = state.team.map(m => `<option value="${m}">${m}</option>`).join('');
+            document.getElementById('task-assigned-to').innerHTML = options;
+        }
 
-        initAuth();
 
+        /* --- TAB 3: HOURLY REPORT --- */
+        function formatHour(h) {
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            const h12 = h % 12 || 12;
+            return `${h12}:00 ${ampm}`;
+        }
+
+        function loadHourlyReport() {
+            const date = document.getElementById('hourly-date-picker').value;
+            const grid = document.getElementById('hourly-grid');
+            
+            // Init data for date if missing
+            if (!state.hourlyLogs[date]) {
+                state.hourlyLogs[date] = Array.from({length: 24}, (_, i) => ({
+                    hour: i,
+                    workName: "",
+                    category: state.categories[0],
+                    type: "work",
+                    timeTaken: 0
+                }));
+            }
+
+            const logs = state.hourlyLogs[date];
+            
+            const categoryOptions = state.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+
+            grid.innerHTML = logs.map((log, index) => `
+                <div class="px-6 py-3 flex flex-col md:grid md:grid-cols-12 gap-4 items-center hover:bg-gray-50 transition border-b border-gray-50 last:border-0" data-hour="${index}">
+                    <div class="col-span-12 md:col-span-1 font-semibold text-gray-700 w-full text-left">${formatHour(log.hour)}</div>
+                    <div class="col-span-12 md:col-span-4 w-full">
+                        <input type="text" class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none log-workname" placeholder="What did you do?" value="${log.workName}">
+                    </div>
+                    <div class="col-span-12 md:col-span-3 w-full">
+                        <select class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none log-category">
+                            ${state.categories.map(c => `<option value="${c}" ${log.category === c ? 'selected' : ''}>${c}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="col-span-12 md:col-span-2 w-full">
+                        <select class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none log-type" onchange="calculateSmartReport()">
+                            <option value="work" ${log.type === 'work' ? 'selected' : ''}>Work</option>
+                            <option value="free" ${log.type === 'free' ? 'selected' : ''}>Free / Break</option>
+                            <option value="sleep" ${log.type === 'sleep' ? 'selected' : ''}>Sleep</option>
+                        </select>
+                    </div>
+                    <div class="col-span-12 md:col-span-2 w-full flex justify-end">
+                        <input type="number" min="0" max="60" class="w-20 px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none text-right log-time" value="${log.timeTaken}" oninput="calculateSmartReport()">
+                        <span class="ml-2 text-sm text-gray-500 mt-1">m</span>
+                    </div>
+                </div>
+            `).join('');
+
+            calculateSmartReport();
+        }
+
+        function calculateSmartReport() {
+            let workMins = 0, freeMins = 0, sleepMins = 0;
+            
+            const rows = document.querySelectorAll('#hourly-grid > div');
+            rows.forEach(row => {
+                const type = row.querySelector('.log-type').value;
+                const time = parseInt(row.querySelector('.log-time').value) || 0;
+                
+                if (type === 'work') workMins += time;
+                else if (type === 'free') freeMins += time;
+                else if (type === 'sleep') sleepMins += time;
+            });
+
+            const formatTime = (mins) => `${Math.floor(mins/60)}h ${mins%60}m`;
+            
+            document.getElementById('stat-work-hrs').innerText = formatTime(workMins);
+            document.getElementById('stat-free-hrs').innerText = formatTime(freeMins);
+            document.getElementById('stat-sleep-hrs').innerText = formatTime(sleepMins);
+        }
+
+        function saveHourlyLogs() {
+            const date = document.getElementById('hourly-date-picker').value;
+            const rows = document.querySelectorAll('#hourly-grid > div');
+            
+            const logs = Array.from(rows).map(row => ({
+                hour: parseInt(row.getAttribute('data-hour')),
+                workName: row.querySelector('.log-workname').value,
+                category: row.querySelector('.log-category').value,
+                type: row.querySelector('.log-type').value,
+                timeTaken: parseInt(row.querySelector('.log-time').value) || 0
+            }));
+
+            state.hourlyLogs[date] = logs;
+            
+            // Show a tiny temp success message
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = "Saved!";
+            btn.classList.replace('bg-indigo-600', 'bg-emerald-600');
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.classList.replace('bg-emerald-600', 'bg-indigo-600');
+            }, 2000);
+
+            renderReports(); // Update recent summaries
+        }
+
+        function downloadHourlyReport() {
+            // Ensure logs are saved first
+            saveHourlyLogs();
+            
+            const date = document.getElementById('hourly-date-picker').value;
+            const logs = state.hourlyLogs[date];
+            
+            let csv = "Time,Work Name,Category,Type,Time Taken (Mins)\n";
+            logs.forEach(log => {
+                // escape commas in text
+                const safeName = log.workName.replace(/,/g, ' ');
+                csv += `${formatHour(log.hour)},${safeName},${log.category},${log.type},${log.timeTaken}\n`;
+            });
+
+            // Add summary
+            csv += "\nSummary\n";
+            csv += `Working Hours,${document.getElementById('stat-work-hrs').innerText}\n`;
+            csv += `Free Hours,${document.getElementById('stat-free-hrs').innerText}\n`;
+            csv += `Sleep Hours,${document.getElementById('stat-sleep-hrs').innerText}\n`;
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `Work_Report_${date}.csv`);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        /* --- TAB 4: REPORTS --- */
+        function renderReports() {
+            // Overall Stats
+            const total = state.tasks.length;
+            const completed = state.tasks.filter(t => t.status === 'completed').length;
+            const pending = total - completed;
+            const overdue = state.tasks.filter(t => isOverdue(t.dueDate, t.status)).length;
+
+            document.getElementById('rep-total').innerText = total;
+            document.getElementById('rep-completed').innerText = completed;
+            document.getElementById('rep-pending').innerText = pending;
+            document.getElementById('rep-overdue').innerText = overdue;
+
+            // Categories
+            const catStats = {};
+            state.categories.forEach(c => catStats[c] = 0);
+            state.tasks.forEach(t => {
+                if(catStats[t.category] !== undefined) catStats[t.category]++;
+            });
+
+            const catContainer = document.getElementById('rep-categories');
+            catContainer.innerHTML = Object.entries(catStats)
+                .sort((a, b) => b[1] - a[1]) // sort by count desc
+                .map(([cat, count]) => {
+                    const percentage = total === 0 ? 0 : Math.round((count / total) * 100);
+                    return `
+                    <div class="mb-3">
+                        <div class="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                            <span>${cat}</span>
+                            <span>${count} tasks (${percentage}%)</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-indigo-600 h-2 rounded-full" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `}).join('');
+
+            // Recent Hourly Summaries (last 3 days stored)
+            const summaryContainer = document.getElementById('rep-hourly-summary');
+            const dates = Object.keys(state.hourlyLogs).sort().reverse().slice(0, 5); // Latest 5
+            
+            if(dates.length === 0) {
+                summaryContainer.innerHTML = `<p class="text-gray-500 italic">No hourly logs saved yet.</p>`;
+                return;
+            }
+
+            summaryContainer.innerHTML = dates.map(date => {
+                const logs = state.hourlyLogs[date];
+                let wMins = 0, fMins = 0, sMins = 0;
+                logs.forEach(l => {
+                    if(l.type === 'work') wMins += l.timeTaken;
+                    if(l.type === 'free') fMins += l.timeTaken;
+                    if(l.type === 'sleep') sMins += l.timeTaken;
+                });
+                const fmt = m => `${Math.floor(m/60)}h`;
+                
+                return `
+                <div class="flex justify-between items-center p-3 bg-gray-50 border border-gray-100 rounded-lg">
+                    <div>
+                        <p class="font-bold text-gray-800">${formatDate(date)}</p>
+                        <p class="text-xs text-gray-500">Log entries completed</p>
+                    </div>
+                    <div class="flex gap-3 text-sm">
+                        <div class="text-indigo-600 font-semibold" title="Work"><i class="fa-solid fa-briefcase"></i> ${fmt(wMins)}</div>
+                        <div class="text-amber-500 font-semibold" title="Free"><i class="fa-solid fa-mug-hot"></i> ${fmt(fMins)}</div>
+                        <div class="text-slate-500 font-semibold" title="Sleep"><i class="fa-solid fa-bed"></i> ${fmt(sMins)}</div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
     </script>
 </body>
 </html>
