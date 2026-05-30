@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WorkFlow - Work Management Portal</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        /* Custom scrollbar for better aesthetics */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -20,8 +21,7 @@
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 antialiased overflow-hidden">
 
-    <!-- Login Screen -->
-    <div id="login-screen" class="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-4 z-50">
+    <div id="login-screen" class="hidden fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-4 z-50">
         <div class="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center border border-gray-100">
             <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <i class="fas fa-briefcase text-3xl"></i>
@@ -36,13 +36,10 @@
         </div>
     </div>
 
-    <!-- Main App Wrapper -->
     <div id="app-wrapper" class="hidden min-h-screen flex bg-gray-100">
         
-        <!-- Mobile Sidebar Overlay -->
         <div id="mobile-overlay" class="hidden fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"></div>
 
-        <!-- Sidebar -->
         <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col">
             <div class="p-6 border-b border-gray-100 flex items-center justify-between">
                 <div class="flex items-center gap-3 text-blue-600 font-bold text-xl">
@@ -77,9 +74,7 @@
             </div>
         </aside>
 
-        <!-- Main Content Area -->
         <main class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-            <!-- Mobile Header -->
             <header class="lg:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between shrink-0">
                 <div class="flex items-center gap-3 text-blue-600 font-bold text-lg">
                     <i class="fas fa-briefcase"></i> WorkFlow
@@ -89,19 +84,14 @@
                 </button>
             </header>
 
-            <!-- Dynamic Content -->
             <div id="content-area" class="flex-1 overflow-y-auto p-4 sm:p-6">
                 <!-- Content injected via JS -->
             </div>
         </main>
     </div>
 
-    <!-- MODALS -->
-
-    <!-- Modal Backdrop -->
     <div id="modal-backdrop" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center p-4 z-[60]">
         
-        <!-- Add Task Modal -->
         <div id="modal-add-task" class="hidden bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-4 border-b flex justify-between items-center bg-gray-50">
                 <h2 class="text-xl font-semibold text-gray-800">Add New Task</h2>
@@ -109,6 +99,7 @@
                     <i class="fas fa-times text-gray-500"></i>
                 </button>
             </div>
+            
             <div class="p-4 overflow-y-auto">
                 <form id="form-add-task" class="space-y-4">
                     <div>
@@ -161,7 +152,6 @@
             </div>
         </div>
 
-        <!-- Add/Edit Log Modal -->
         <div id="modal-log-time" class="hidden bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-4 border-b flex justify-between items-center bg-gray-50">
                 <h2 class="text-xl font-semibold text-gray-800" id="log-modal-title">Log Time</h2>
@@ -169,6 +159,7 @@
                     <i class="fas fa-times text-gray-500"></i>
                 </button>
             </div>
+            
             <div class="p-4 overflow-y-auto">
                 <form id="form-log-time" class="space-y-4">
                     <input type="hidden" id="log-id">
@@ -205,13 +196,11 @@
 
     </div>
 
-    <!-- Application Script -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Configuration & Initialization ---
         let firebaseConfig = { apiKey: "mock", authDomain: "mock", projectId: "mock", appId: "mock" };
         try {
             if (typeof __firebase_config !== 'undefined' && __firebase_config) {
@@ -226,7 +215,6 @@
         const db = getFirestore(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // --- State Management ---
         let currentUser = null;
         let isGuest = false;
         let activeTab = 'manager';
@@ -241,7 +229,6 @@
 
         let unsubscribes = [];
 
-        // --- DOM Elements ---
         const els = {
             login: document.getElementById('login-screen'),
             app: document.getElementById('app-wrapper'),
@@ -254,7 +241,6 @@
             modalLogTime: document.getElementById('modal-log-time')
         };
 
-        // --- Navigation Config ---
         const navItems = [
             { id: 'today', label: "Today's Work", icon: 'fa-calendar-alt', color: 'text-blue-600', bg: 'bg-blue-100' },
             { id: 'manager', label: "Work Manager", icon: 'fa-briefcase', color: 'text-blue-600', bg: 'bg-blue-100' },
@@ -264,7 +250,6 @@
             { id: 'team', label: "Work Done By", icon: 'fa-users', color: 'text-teal-500', bg: 'bg-teal-50' }
         ];
 
-        // --- Utility Functions ---
         function getTodayString() {
             return new Date().toISOString().split('T')[0];
         }
@@ -284,13 +269,11 @@
             els.mobileOverlay.classList.remove('hidden');
         }
 
-        // --- Auth Logic (Rule 3) ---
         async function initAuth() {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
-                    // Show login screen if no token
                     els.login.classList.remove('hidden');
                 }
             } catch (error) {
@@ -300,15 +283,15 @@
         }
 
         document.getElementById('btn-guest-login').addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            const origText = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
+            
             try {
                 await signInAnonymously(auth);
                 isGuest = true;
             } catch (error) {
                 console.error("Guest login failed:", error);
-                
-                // Show inline error on the button
-                const btn = e.currentTarget;
-                const origText = btn.innerHTML;
                 btn.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Login Failed`;
                 btn.classList.replace('bg-blue-600', 'bg-red-600');
                 btn.classList.replace('hover:bg-blue-700', 'hover:bg-red-700');
@@ -342,7 +325,6 @@
                     currentUser = null;
                     els.app.classList.add('hidden');
                     els.login.classList.remove('hidden');
-                    // Cleanup listeners
                     unsubscribes.forEach(unsub => unsub());
                     unsubscribes = [];
                 }
@@ -351,7 +333,6 @@
             }
         });
 
-        // --- Firestore Data Fetching (Rules 1 & 2) ---
         function setupFirestoreListeners() {
             if (!currentUser) return;
             
@@ -382,7 +363,6 @@
             }, console.error));
         }
 
-        // --- UI Rendering ---
         function renderNavigation() {
             els.navMenu.innerHTML = navItems.map(item => `
                 <li>
@@ -425,8 +405,6 @@
                 case 'team': els.content.innerHTML = renderPlaceholder("Work Done By (Team)", "View detailed analytics on team performance and task completion rates. This feature is under development.", "fa-users", "text-teal-500", "bg-teal-50"); break;
             }
         }
-
-        // --- Render Functions for Tabs ---
 
         function renderWorkManager() {
             let rows = state.tasks.length === 0 ? `
@@ -537,7 +515,6 @@
         function renderHourlyReport() {
             const logsForDate = state.hourlyLogs.filter(log => log.date === state.selectedReportDate);
             
-            // Stats logic
             const totalMinutesLogged = logsForDate.reduce((acc, curr) => acc + (curr.hours * 60) + curr.minutes, 0);
             const workingHoursStr = `${Math.floor(totalMinutesLogged / 60)}h ${totalMinutesLogged % 60}m`;
             const totalDayMinutes = 24 * 60;
@@ -653,14 +630,10 @@
             </div>`;
         }
 
-        // --- Event Delegation & Handlers ---
-        
-        // Mobile Sidebar Toggles
         document.getElementById('btn-open-sidebar').addEventListener('click', openSidebar);
         document.getElementById('btn-close-sidebar').addEventListener('click', closeSidebar);
         els.mobileOverlay.addEventListener('click', closeSidebar);
 
-        // Modals Toggles
         function openModal(modalEl) {
             els.modalBackdrop.classList.remove('hidden');
             els.modalBackdrop.classList.add('flex');
@@ -676,9 +649,7 @@
 
         document.querySelectorAll('.modal-close-btn').forEach(btn => btn.addEventListener('click', closeModals));
         
-        // Add Task Logic
         document.getElementById('content-area').addEventListener('click', async (e) => {
-            // Add Task Button
             if (e.target.closest('#btn-open-add-task')) {
                 document.getElementById('form-add-task').reset();
                 document.getElementById('task-assigned-date').value = getTodayString();
@@ -686,7 +657,6 @@
                 openModal(els.modalAddTask);
             }
             
-            // Toggle Task Status
             const toggleBtn = e.target.closest('.toggle-task-btn');
             if (toggleBtn && currentUser) {
                 const taskId = toggleBtn.dataset.id;
@@ -697,14 +667,12 @@
                 }
             }
 
-            // Delete Task
             const delTaskBtn = e.target.closest('.delete-task-btn');
             if (delTaskBtn && currentUser) {
                 const taskId = delTaskBtn.dataset.id;
                 await deleteDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/tasks`, taskId));
             }
 
-            // Add Log Time
             if (e.target.closest('#btn-open-log')) {
                 document.getElementById('form-log-time').reset();
                 document.getElementById('log-id').value = '';
@@ -713,7 +681,6 @@
                 openModal(els.modalLogTime);
             }
 
-            // Edit Log
             const editLogBtn = e.target.closest('.edit-log-btn');
             if (editLogBtn) {
                 const log = JSON.parse(editLogBtn.dataset.log);
@@ -727,14 +694,12 @@
                 openModal(els.modalLogTime);
             }
 
-            // Delete Log
             const delLogBtn = e.target.closest('.delete-log-btn');
             if (delLogBtn && currentUser) {
                 const logId = delLogBtn.dataset.id;
                 await deleteDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/hourlyLogs`, logId));
             }
 
-            // CSV Download
             if (e.target.closest('#btn-download-csv')) {
                 let csvContent = "data:text/csv;charset=utf-8,Date,Work Name,Category,Hours,Minutes\n";
                 state.hourlyLogs.forEach(log => {
@@ -751,7 +716,6 @@
             }
         });
 
-        // Date Picker Change for Report
         document.getElementById('content-area').addEventListener('change', (e) => {
             if (e.target.id === 'report-date-picker') {
                 state.selectedReportDate = e.target.value;
@@ -759,7 +723,6 @@
             }
         });
 
-        // Form Submit - Add Task
         document.getElementById('form-add-task').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser) return;
@@ -778,7 +741,6 @@
             } catch (error) { console.error("Error adding task", error); }
         });
 
-        // Category Inline Add Logic
         const wrapperSelect = document.getElementById('category-select-wrapper');
         const wrapperAdd = document.getElementById('category-add-wrapper');
         const inputNewCat = document.getElementById('new-category-name');
@@ -803,16 +765,13 @@
             if (!name) return;
             try {
                 const docRef = await addDoc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/categories`), { name });
-                // Reset UI, select the new one (simulate selection)
                 wrapperAdd.classList.add('hidden');
                 wrapperAdd.classList.remove('flex');
                 wrapperSelect.classList.remove('hidden');
                 inputNewCat.value = '';
-                // Dropdown re-populates automatically via snapshot listener
             } catch (error) { console.error("Error adding category", error); }
         });
 
-        // Form Submit - Log Time
         document.getElementById('form-log-time').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser) return;
@@ -838,7 +797,6 @@
             } catch (error) { console.error("Error saving log", error); }
         });
 
-        // Kickoff
         initAuth();
 
     </script>
